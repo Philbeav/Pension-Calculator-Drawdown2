@@ -5,11 +5,10 @@ from datetime import date
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- 2. CSS STYLING ---
+# --- 2. ROBUST CSS STYLING ---
 st.markdown(
     """
     <style>
-    /* Page and Container */
     .stApp { background-color: #FFFFFF !important; }
     
     .block-container {
@@ -23,16 +22,14 @@ st.markdown(
 
     h1, h2, h3, .stSubheader { color: #00008B !important; }
     
-    /* THE TABLE FIX: This CSS forces the index (0,1,2) to vanish */
+    /* Hide Table Index */
     thead tr th:first-child { display:none !important; }
     tbody tr th { display:none !important; }
     .stTable td { text-align: center !important; }
 
-    /* Inputs */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {
         background-color: #FFFFE0 !important; 
     }
-    
     header {visibility: hidden;}
     </style>
     """,
@@ -43,9 +40,7 @@ st.title("Astute Retirement Mindset")
 st.subheader("Pension Drawdown Calculator")
 
 # --- 3. INPUTS ---
-st.markdown("### 📋 Personal & Financial Details")
-
-# Set range from 1955 to 2010
+# Range strictly set from 1955 to 2010
 dob = st.date_input(
     "Date of Birth", 
     value=date(1975, 1, 1), 
@@ -57,21 +52,7 @@ dob = st.date_input(
 target_retirement_date = st.date_input("Target Retirement Date", value=date(2035, 1, 1), format="DD/MM/YYYY")
 
 current_pot = st.slider("Current Private Pension Pot (£)", 0, 3500000, 500000, step=5000)
-st.markdown(f"**Selected Pot: £{current_pot:,}**")
+st.write(f"**Selected Pot: £{current_pot:,}**")
 
 annual_contribution = st.slider("Annual Contribution (£)", 0, 100000, 10000, step=500)
 monthly_drawdown = st.slider("Desired Monthly Withdrawal (£)", 0, 20000, 3000, step=100)
-
-st.info(f"Fixed Yearly Drawdown: £{monthly_drawdown * 12:,.0f}")
-
-take_lump_sum = st.selectbox("Take 25% Tax-Free Lump Sum?", ["N", "Y"])
-lump_sum_val = 0.0
-if take_lump_sum == "Y":
-    max_ls = min(current_pot * 0.25, 268275.0)
-    lump_sum_val = st.number_input(f"Lump Sum Amount (Max £{max_ls:,.0f})", value=max_ls)
-
-state_pension_end_date = st.date_input("Date UK State Pension expected to end (Optional)", value=None, format="DD/MM/YYYY")
-
-with st.expander("Growth & Inflation Settings"):
-    cagr = st.number_input("Pension Pot CAGR (%)", value=5.0) / 100
-    inflation = st.number_input("Expected Inflation Rate (%)", value=4.0
