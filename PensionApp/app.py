@@ -5,16 +5,12 @@ from datetime import date
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- 2. THE FINAL CSS FIX ---
+# --- 2. CSS STYLING ---
 st.markdown(
     """
     <style>
-    /* 1. Page Background White */
-    .stApp {
-        background-color: #FFFFFF !important;
-    }
+    .stApp { background-color: #FFFFFF !important; }
     
-    /* 2. Target the main content area for the Cream Box & Blue Border */
     .block-container {
         background-color: #FFF0DB !important;
         border: 5px solid #00008B !important;
@@ -25,30 +21,26 @@ st.markdown(
         max-width: 800px !important;
     }
 
-    /* 3. Headers & Text */
     h1, h2, h3, .stSubheader { color: #00008B !important; }
     
-    /* 4. Table Formatting: Center and Hide Index */
     .stTable td, .stTable th { text-align: center !important; }
     thead tr th:first-child { display:none !important; }
     tbody tr th { display:none !important; }
     
-    /* 5. Input Highlights in Yellow */
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {
         background-color: #FFFFE0 !important; 
     }
     
-    /* Hide Streamlit default header */
     header {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- 3. APP CONTENT ---
 st.title("Astute Retirement Mindset")
 st.subheader("Pension Drawdown Calculator")
 
+# --- 3. INPUTS ---
 st.markdown("### 📋 Personal & Financial Details")
 
 dob = st.date_input("Date of Birth", value=date(1975, 1, 1), format="DD/MM/YYYY")
@@ -76,18 +68,26 @@ with st.expander("Growth & Inflation Settings"):
     debasement = st.number_input("Currency Debasement Rate (%)", value=5.0) / 100
 
 # --- 4. CALCULATION LOGIC ---
-today_yr = date.today().year
-retire_yr = target_retirement_date.year
-start_age = retire_yr - dob.year
 
+# Precise Age Function
+def get_age(birth_date, current_date):
+    return current_date.year - birth_date.year - ((current_date.month, current_date.day) < (birth_date.month, birth_date.day))
+
+today = date.today()
+retire_yr = target_retirement_date.year
+retire_age = get_age(dob, target_retirement_date)
+
+# State Pension Age Logic
 if dob.year < 1960: spa_age = 66
 elif dob.year < 1977: spa_age = 67
 else: spa_age = 68
-spa_year = dob.year + spa_age
+# State pension starts on the actual birthday of that age
+spa_date = date(dob.year + spa_age, dob.month, dob.day)
 
-# Accumulation
+# Accumulation (Approx years between now and retirement)
+years_to_grow = max(0, retire_yr - today.year)
 pot_at_retire = float(current_pot)
-for _ in range(max(0, retire_yr - today_yr)):
+for _ in range(years_to_grow):
     pot_at_retire = (pot_at_retire + annual_contribution) * (1 + cagr)
 
 balance = pot_at_retire - lump_sum_val
@@ -96,24 +96,29 @@ base_sp_annual = 11973.0
 
 data = []
 for i in range(30):
-    yr = retire_yr + i
-    age = start_age + i
+    current_sim_date = date(target_retirement_date.year + i, target_retirement_date.month, target_retirement_date.day)
+    curr_yr = current_sim_date.year
+    curr_age = get_age(dob, current_sim_date)
     
+    # State Pension Logic (Comparing dates, not just years)
     sp_val = 0.0
-    if yr >= spa_year:
-        if state_pension_end_date is None or yr < state_pension_end_date.year:
-            sp_val = base_sp_annual * (1.045 ** max(0, yr - today_yr))
+    if current_sim_date >= spa_date:
+        if state_pension_end_date is None or current_sim_date < state_pension_end_date:
+            years_diff = curr_yr - today.year
+            sp_val = base_sp_annual * (1.045 ** max(0, years_diff))
     
+    # Private Pension
     payout = yearly_goal if balance >= yearly_goal else balance
     balance -= payout
     balance *= (1 + cagr)
     
     combined = payout + sp_val
-    real_val = combined / ((1 + (inflation + debasement)/2) ** max(1, (yr - today_yr)))
+    total_inf = (inflation + debasement) / 2
+    real_val = combined / ((1 + total_inf) ** max(1, (curr_yr - today.year)))
 
     data.append({
-        "Year": yr,
-        "User Age": int(age),
+        "Year": curr_yr,
+        "User Age": int(curr_age),
         "Remaining Pot": f"£{balance:,.0f}",
         "Private Pension": f"£{payout:,.0f}",
         "State Pension": f"£{sp_val:,.0f}",
