@@ -5,61 +5,48 @@ from datetime import date, timedelta
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- CUSTOM STYLING (Cream Background, White Outer Container, Blue Border) ---
+# --- CUSTOM STYLING ---
 st.markdown(
-    f"""
+    """
     <style>
-    /* 1. The main background (the "void" at the very back) */
-    .stApp {{
+    /* 1. Set the background color for the whole page */
+    .stApp {
         background-color: #FFF0DB; 
-    }}
+    }
     
-    /* 2. The area outside the blue border but inside the center column */
-    /* We make this White to create the contrast you requested */
-    .main {{
-        background-color: #FFFFFF;
-        max-width: 950px;
-        margin: auto;
-    }}
-
-    /* 3. The App Container (Inside the Blue Border) */
-    .block-container {{
+    /* 2. The Main Content Box (Inside the Blue Border) */
+    .block-container {
         border: 4px solid #00008B; 
         padding: 40px !important;
-        background-color: #FFF0DB; /* Matching your cream color inside */
+        background-color: #FFF0DB; 
         margin-top: 50px !important; 
         margin-bottom: 50px !important;
         border-radius: 15px;
-        max-width: 850px !important;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }}
+        max-width: 800px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
     
     /* Dark Blue Headlines */
-    h1, h2, h3, h4, h5, h6, .stSubheader {{
+    h1, h2, h3, h4, h5, h6, .stSubheader {
         color: #00008B !important;
-        font-family: 'Helvetica', sans-serif;
-    }}
+    }
 
-    /* CSS TO HIDE THE INDEX COLUMN AND CENTER DATA */
-    thead tr th:first-child {{ display:none; }}
-    tbody tr th {{ display:none; }}
+    /* CENTER DATA AND HIDE INDEX */
+    /* This hides the first column (0, 1, 2...) */
+    thead tr th:first-child { display:none; }
+    tbody tr th { display:none; }
     
-    .stTable td, .stTable th {{
+    .stTable td, .stTable th {
         text-align: center !important;
-        color: #333;
-    }}
-    
-    thead tr th {{
-        text-align: center !important;
-    }}
+    }
 
     /* Input highlights in Yellow */
-    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {{
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {
         background-color: #FFFFE0 !important; 
-    }}
+    }
 
     /* Hide default Streamlit header */
-    header {{visibility: hidden;}}
+    header {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
@@ -139,4 +126,48 @@ for year in range(1, 31):
     
     for month in range(12):
         years_from_now = (sim_date - date.today()).days / 365.25
-        projected_sp_
+        projected_sp_monthly = (base_sp_annual * (1.045 ** years_from_now)) / 12
+        
+        if sim_date >= spa_date:
+            if not state_pension_end_date or sim_date < state_pension_end_date:
+                annual_sp_this_year += projected_sp_monthly
+        
+        if balance >= fixed_monthly_withdrawal:
+            balance -= fixed_monthly_withdrawal
+            annual_drawdown_this_year += fixed_monthly_withdrawal
+        else:
+            annual_drawdown_this_year += balance
+            balance = 0
+            
+        balance *= (1 + cagr)**(1/12)
+        sim_date += timedelta(days=30)
+
+    combined = annual_drawdown_this_year + annual_sp_this_year
+    total_years_from_now = year + years_to_retire
+    real_val = combined / ((1 + (inflation + debasement)/2) ** total_years_from_now)
+
+    data_rows.append({
+        "Year": sim_date.year,
+        "User Age": int(current_age),
+        "Remaining Pot": f"£{balance:,.0f}",
+        "Private Pension": f"£{annual_drawdown_this_year:,.0f}",
+        "State Pension": f"£{annual_sp_this_year:,.0f}",
+        "Combined": f"£{combined:,.0f}",
+        "Real Value": f"£{real_val:,.0f}"
+    })
+
+# --- DISPLAY TABLE ---
+st.subheader("30-Year Projection")
+df = pd.DataFrame(data_rows)
+df = df[["Year", "User Age", "Remaining Pot", "Private Pension", "State Pension", "Combined", "Real Value"]]
+
+st.table(df)
+
+# --- FOOTER ---
+st.markdown("---")
+st.markdown("""
+**Notes:**
+* **The model assumes that the users qualifies for the full state pension with the required national insurance contributions having been attained.**
+* **All of these calculations are for illustrative purposes only and should not in any way be regarded as guaranteed or relied upon for financial decisions.**
+* **Figures shown are gross amounts and should be modelled against your own personal tax liabilities.**
+""")
