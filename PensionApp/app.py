@@ -5,50 +5,52 @@ from datetime import date, timedelta
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- CUSTOM STYLING (Dark Blue Titles, Cream Background, Centered Table) ---
+# --- CUSTOM STYLING (Specific Background, Blue Titles, Bullet Points) ---
 st.markdown(
-    """
+    f"""
     <style>
-    /* Main Background - Cream */
-    .stApp {
-        background-color: #FFFDD0; 
-    }
+    /* Main Background - Custom Hex #FFF0DB */
+    .stApp {{
+        background-color: #FFF0DB; 
+    }}
     
     /* Content Container with Blue Border */
-    .block-container {
+    .block-container {{
         border: 4px solid #00008B; 
         padding: 30px !important;
-        background-color: #FFFDD0; 
+        background-color: #FFF0DB; 
         margin-top: 50px !important; 
         margin-bottom: 40px !important;
         border-radius: 10px;
         max-width: 850px !important;
-    }
+    }}
     
     /* Dark Blue Headlines and Subheaders */
-    h1, h2, h3, h4, h5, h6, .stSubheader {
+    h1, h2, h3, h4, h5, h6, .stSubheader {{
         color: #00008B !important;
         font-family: 'Helvetica', sans-serif;
-    }
+    }}
 
     /* CSS TO HIDE THE INDEX COLUMN AND CENTER DATA */
-    /* This targets the first column (the index) and hides it */
-    thead tr th:first-child { display:none; }
-    tbody tr th { display:none; }
+    thead tr th:first-child {{ display:none; }}
+    tbody tr th {{ display:none; }}
     
-    /* Center all remaining headers and cells */
-    .stTable td, .stTable th {
+    .stTable td, .stTable th {{
         text-align: center !important;
         color: #333;
-    }
+    }}
+    
+    thead tr th {{
+        text-align: center !important;
+    }}
 
     /* Input highlights in Yellow */
-    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {{
         background-color: #FFFFE0 !important; 
-    }
+    }}
 
     /* Hide default Streamlit header */
-    header {visibility: hidden;}
+    header {{visibility: hidden;}}
     </style>
     """,
     unsafe_allow_html=True
@@ -100,14 +102,12 @@ elif dob.year < 1977: spa_age = 67
 else: spa_age = 68
 spa_date = date(dob.year + spa_age, dob.month, dob.day)
 
-# 1. Accumulation Phase
 years_to_retire = (target_retirement_date - date.today()).days / 365.25
 pot_at_retirement = current_pot
 if years_to_retire > 0:
     for _ in range(max(0, int(years_to_retire * 12))):
         pot_at_retirement = pot_at_retirement * (1 + cagr)**(1/12) + (annual_contribution / 12)
 
-# 2. Lump Sum
 pot_after_ls = pot_at_retirement - lump_sum_amount
 
 st.markdown("---")
@@ -119,7 +119,7 @@ col2.metric("Starting Pension Pot", f"£{pot_after_ls:,.0f}")
 data_rows = []
 balance = pot_after_ls
 sim_date = target_retirement_date
-base_sp_annual = 11973.0 # 2025/26
+base_sp_annual = 11973.0 
 
 fixed_monthly_withdrawal = monthly_drawdown_goal 
 
@@ -158,18 +158,3 @@ for year in range(1, 31):
         "State Pension": f"£{annual_sp_this_year:,.0f}",
         "Combined": f"£{combined:,.0f}",
         "Real Value": f"£{real_val:,.0f}"
-    })
-
-# --- DISPLAY TABLE ---
-st.subheader("30-Year Projection")
-df = pd.DataFrame(data_rows)
-df = df[["Year", "User Age", "Remaining Pot", "Private Pension", "State Pension", "Combined", "Real Value"]]
-
-# Use the robust st.table method
-st.table(df)
-
-# --- FOOTER ---
-st.markdown("---")
-st.markdown("""
-**The model assumes that the users qualifies for the full state pension with the required national insurance contributions having been attained.** **All of these calculations are for illustrative purposes only and should not in any way be regarded as guaranteed or relied upon for financial decisions.** **Figures shown are gross amounts and should be modelled against your own personal tax liabilities.**
-""")
