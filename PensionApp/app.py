@@ -158,3 +158,20 @@ for year in range(1, 31):
         "State Pension": f"£{annual_sp_this_year:,.0f}",
         "Combined": f"£{combined:,.0f}",
         "Real Value": f"£{real_val:,.0f}"
+    })
+
+# --- DISPLAY TABLE ---
+st.subheader("30-Year Projection")
+df = pd.DataFrame(data_rows)
+df = df[["Year", "User Age", "Remaining Pot", "Private Pension", "State Pension", "Combined", "Real Value"]]
+
+st.table(df)
+
+# --- FOOTER ---
+st.markdown("---")
+st.markdown("""
+**Notes:**
+* **The model assumes that the users qualifies for the full state pension with the required national insurance contributions having been attained.**
+* **All of these calculations are for illustrative purposes only and should not in any way be regarded as guaranteed or relied upon for financial decisions.**
+* **Figures shown are gross amounts and should be modelled against your own personal tax liabilities.**
+""")
