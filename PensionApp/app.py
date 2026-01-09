@@ -5,17 +5,34 @@ from datetime import date
 # 1. Page Config
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# 2. Minimum Styling (Only the essentials to prevent loading errors)
+# 2. Robust Styling (The "Safe" Way)
 st.markdown("""
     <style>
-    /* Basic background and text colors */
-    .stApp { background-color: #FFF0DB; }
+    /* Main background remains white */
+    .stApp { background-color: #FFFFFF !important; }
+    
+    /* This creates the blue-bordered cream box */
+    [data-testid="stVerticalBlock"] > div:has(div.stTitle) {
+        background-color: #FFF0DB !important;
+        border: 4px solid #00008B !important;
+        padding: 40px !important;
+        border-radius: 15px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Headers & Subheaders in Dark Blue */
     h1, h2, h3, .stSubheader { color: #00008B !important; }
     
-    /* Hide Table Index */
+    /* Table Styling: Center and Hide Index */
+    .stTable td { text-align: center !important; }
     thead tr th:first-child { display:none; }
     tbody tr th { display:none; }
-    .stTable td { text-align: center !important; }
+    
+    /* Input Highlights in Yellow */
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {
+        background-color: #FFFFE0 !important; 
+    }
+    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -23,14 +40,17 @@ st.title("Astute Retirement Mindset")
 st.subheader("Pension Drawdown Calculator")
 
 # 3. Inputs
+st.markdown("### 📋 Personal & Financial Details")
 dob = st.date_input("Date of Birth", value=date(1975, 1, 1), format="DD/MM/YYYY")
 target_retirement_date = st.date_input("Target Retirement Date", value=date(2035, 1, 1), format="DD/MM/YYYY")
 
 current_pot = st.slider("Current Private Pension Pot (£)", 0, 3500000, 500000, step=5000)
-st.write(f"Selected: £{current_pot:,}")
+st.markdown(f"**Selected Pot: £{current_pot:,}**")
 
 annual_contribution = st.slider("Annual Contribution (£)", 0, 100000, 10000, step=500)
 monthly_drawdown = st.slider("Desired Monthly Withdrawal (£)", 0, 20000, 3000, step=100)
+
+st.info(f"Fixed Yearly Drawdown: £{monthly_drawdown * 12:,.0f}")
 
 take_lump_sum = st.selectbox("Take 25% Tax-Free Lump Sum?", ["N", "Y"])
 lump_sum_val = 0.0
@@ -38,41 +58,75 @@ if take_lump_sum == "Y":
     max_ls = min(current_pot * 0.25, 268275.0)
     lump_sum_val = st.number_input(f"Lump Sum Amount (Max £{max_ls:,.0f})", value=max_ls)
 
+state_pension_end_date = st.date_input("Date UK State Pension expected to end (Optional)", value=None, format="DD/MM/YYYY")
+
+with st.expander("Growth & Inflation Settings"):
+    cagr = st.number_input("Pension Pot CAGR (%)", value=5.0) / 100
+    inflation = st.number_input("Expected Inflation Rate (%)", value=4.0) / 100
+    debasement = st.number_input("Currency Debasement Rate (%)", value=5.0) / 100
+
 # 4. Calculations
 today_yr = date.today().year
 retire_yr = target_retirement_date.year
-growth = 0.05 # 5% Fixed for stability
+start_age = retire_yr - dob.year
 
-# Accumulation
+# UK State Pension Age Logic
+if dob.year < 1960: spa_age = 66
+elif dob.year < 1977: spa_age = 67
+else: spa_age = 68
+spa_year = dob.year + spa_age
+
+# Accumulation Phase
 pot_at_retire = float(current_pot)
 for _ in range(max(0, retire_yr - today_yr)):
-    pot_at_retire = (pot_at_retire + annual_contribution) * (1 + growth)
+    pot_at_retire = (pot_at_retire + annual_contribution) * (1 + cagr)
 
 balance = pot_at_retire - lump_sum_val
-yearly_goal = monthly_drawdown * 12
+yearly_goal = float(monthly_drawdown * 12)
+base_sp_annual = 11973.0
 
-# 5. Table Logic
+# 5. Simulation Table
 data = []
 for i in range(30):
     yr = retire_yr + i
-    age = yr - dob.year
+    age = start_age + i
     
-    # Simple drawdown logic
+    # State Pension Logic
+    sp_val = 0.0
+    if yr >= spa_year:
+        if state_pension_end_date is None or yr < state_pension_end_date.year:
+            years_from_today = yr - today_yr
+            sp_val = base_sp_annual * (1.045 ** max(0, years_from_today))
+    
+    # Private Drawdown Logic
     payout = yearly_goal if balance >= yearly_goal else balance
     balance -= payout
-    balance *= (1 + growth)
+    balance *= (1 + cagr)
     
+    combined = payout + sp_val
+    real_val = combined / ((1 + (inflation + debasement)/2) ** max(1, (yr - today_yr)))
+
     data.append({
         "Year": yr,
-        "Age": age,
+        "User Age": int(age),
         "Remaining Pot": f"£{balance:,.0f}",
         "Private Pension": f"£{payout:,.0f}",
-        "Combined Income": f"£{payout:,.0f}"
+        "State Pension": f"£{sp_val:,.0f}",
+        "Combined": f"£{combined:,.0f}",
+        "Real Value": f"£{real_val:,.0f}"
     })
 
-# 6. Display
-st.metric("Starting Pension Pot", f"£{pot_at_retire - lump_sum_val:,.0f}")
+# 6. Metrics & Display
+st.markdown("---")
+st.metric("Starting Pension Pot (After Lump Sum)", f"£{pot_at_retire - lump_sum_val:,.0f}")
+st.subheader("30-Year Projection")
 st.table(pd.DataFrame(data))
 
+# 7. Bulleted Warnings
 st.markdown("---")
-st.markdown("Disclaimer: For illustrative purposes only.")
+st.markdown("""
+**Notes:**
+* The model assumes that the users qualifies for the full state pension with the required national insurance contributions having been attained.
+* All of these calculations are for illustrative purposes only and should not in any way be regarded as guaranteed or relied upon for financial decisions.
+* Figures shown are gross amounts and should be modelled against your own personal tax liabilities.
+""")
