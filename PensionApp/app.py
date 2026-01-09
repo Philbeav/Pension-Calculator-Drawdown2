@@ -43,7 +43,7 @@ st.subheader("Pension Drawdown Calculator")
 # --- 3. INPUTS ---
 st.markdown("### 📋 Personal & Financial Details")
 
-# Set range from 1955 to 2010
+# Range set from 1955 to 2010
 dob = st.date_input(
     "Date of Birth", 
     value=date(1975, 1, 1), 
@@ -66,4 +66,61 @@ take_lump_sum = st.selectbox("Take 25% Tax-Free Lump Sum?", ["N", "Y"])
 lump_sum_val = 0.0
 if take_lump_sum == "Y":
     max_ls = min(current_pot * 0.25, 268275.0)
-    lump_sum_val = st.number_input(f"Lump Sum Amount (Max £{max_ls:,.0f})", value=
+    lump_sum_val = st.number_input(f"Lump Sum Amount (Max £{max_ls:,.0f})", value=max_ls, min_value=0.0)
+
+state_pension_end_date = st.date_input("Date UK State Pension expected to end (Optional)", value=None, format="DD/MM/YYYY")
+
+with st.expander("Growth & Inflation Settings"):
+    cagr_input = st.number_input("Pension Pot CAGR (%)", value=5.0)
+    inflation_input = st.number_input("Expected Inflation Rate (%)", value=4.0)
+    debasement_input = st.number_input("Currency Debasement Rate (%)", value=5.0)
+    
+    cagr = cagr_input / 100
+    total_inflation = (inflation_input + debasement_input) / 200
+
+# --- 4. CALCULATION LOGIC ---
+
+today_yr = date.today().year
+retire_yr = target_retirement_date.year
+
+# UK State Pension Age Logic
+if dob.year < 1960: spa_age = 66
+elif dob.year < 1977: spa_age = 67
+else: spa_age = 68
+spa_year = dob.year + spa_age
+
+# Accumulation
+years_to_grow = max(0, retire_yr - today_yr)
+pot_at_retire = float(current_pot)
+for _ in range(int(years_to_grow)):
+    pot_at_retire = (pot_at_retire + annual_contribution) * (1 + cagr)
+
+current_balance = pot_at_retire - lump_sum_val
+yearly_drawdown_goal = float(monthly_drawdown * 12)
+current_sp_annual = 11973.0
+
+data_output = []
+
+# Simulation Loop
+for i in range(30):
+    year_num = retire_yr + i
+    age_num = year_num - dob.year
+    
+    # Calculate State Pension with 4.5% annual increase
+    # We calculate it fresh each loop iteration to avoid power-function errors
+    sp_projected = 11973.0
+    for _ in range(max(0, year_num - today_yr)):
+        sp_projected *= 1.045
+        
+    sp_display = 0.0
+    if year_num >= spa_year:
+        if state_pension_end_date is None or year_num < state_pension_end_date.year:
+            sp_display = sp_projected
+    
+    # Private Pension Drawdown
+    if current_balance >= yearly_drawdown_goal:
+        payout = yearly_drawdown_goal
+        current_balance -= yearly_drawdown_goal
+    else:
+        payout = current_balance
+        current_balance = 0.0
