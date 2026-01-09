@@ -5,7 +5,7 @@ from datetime import date
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- 2. CSS STYLING ---
+# --- 2. CSS STYLING (Simplified for Stability) ---
 st.markdown(
     """
     <style>
@@ -18,14 +18,10 @@ st.markdown(
         border-radius: 20px !important;
         margin-top: 50px !important;
         margin-bottom: 50px !important;
-        max-width: 800px !important;
+        max-width: 900px !important;
     }
 
     h1, h2, h3, .stSubheader { color: #00008B !important; }
-    
-    .stTable td, .stTable th { text-align: center !important; }
-    thead tr th:first-child { display:none !important; }
-    tbody tr th { display:none !important; }
     
     div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="slider"] {
         background-color: #FFFFE0 !important; 
@@ -43,7 +39,6 @@ st.subheader("Pension Drawdown Calculator")
 # --- 3. INPUTS ---
 st.markdown("### 📋 Personal & Financial Details")
 
-# Range set from 1955 to 2010
 dob = st.date_input(
     "Date of Birth", 
     value=date(1975, 1, 1), 
@@ -71,15 +66,11 @@ if take_lump_sum == "Y":
 state_pension_end_date = st.date_input("Date UK State Pension expected to end (Optional)", value=None, format="DD/MM/YYYY")
 
 with st.expander("Growth & Inflation Settings"):
-    cagr_input = st.number_input("Pension Pot CAGR (%)", value=5.0)
-    inflation_input = st.number_input("Expected Inflation Rate (%)", value=4.0)
-    debasement_input = st.number_input("Currency Debasement Rate (%)", value=5.0)
-    
-    cagr = cagr_input / 100
-    total_inflation = (inflation_input + debasement_input) / 200
+    cagr = st.number_input("Pension Pot CAGR (%)", value=5.0) / 100
+    inflation = st.number_input("Expected Inflation Rate (%)", value=4.0) / 100
+    debasement = st.number_input("Currency Debasement Rate (%)", value=5.0) / 100
 
 # --- 4. CALCULATION LOGIC ---
-
 today_yr = date.today().year
 retire_yr = target_retirement_date.year
 
@@ -89,38 +80,14 @@ elif dob.year < 1977: spa_age = 67
 else: spa_age = 68
 spa_year = dob.year + spa_age
 
-# Accumulation
+# Accumulation Phase
 years_to_grow = max(0, retire_yr - today_yr)
 pot_at_retire = float(current_pot)
 for _ in range(int(years_to_grow)):
     pot_at_retire = (pot_at_retire + annual_contribution) * (1 + cagr)
 
 current_balance = pot_at_retire - lump_sum_val
-yearly_drawdown_goal = float(monthly_drawdown * 12)
-current_sp_annual = 11973.0
+yearly_goal = float(monthly_drawdown * 12)
+base_sp_annual = 11973.0
 
-data_output = []
-
-# Simulation Loop
-for i in range(30):
-    year_num = retire_yr + i
-    age_num = year_num - dob.year
-    
-    # Calculate State Pension with 4.5% annual increase
-    # We calculate it fresh each loop iteration to avoid power-function errors
-    sp_projected = 11973.0
-    for _ in range(max(0, year_num - today_yr)):
-        sp_projected *= 1.045
-        
-    sp_display = 0.0
-    if year_num >= spa_year:
-        if state_pension_end_date is None or year_num < state_pension_end_date.year:
-            sp_display = sp_projected
-    
-    # Private Pension Drawdown
-    if current_balance >= yearly_drawdown_goal:
-        payout = yearly_drawdown_goal
-        current_balance -= yearly_drawdown_goal
-    else:
-        payout = current_balance
-        current_balance = 0.0
+data_list = []
