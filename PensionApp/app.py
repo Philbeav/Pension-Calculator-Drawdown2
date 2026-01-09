@@ -43,7 +43,7 @@ st.subheader("Pension Drawdown Calculator")
 # --- 3. INPUTS ---
 st.markdown("### 📋 Personal & Financial Details")
 
-# FIXED: Range now allows 1955 to 2010
+# Set range from 1955 to 2010
 dob = st.date_input(
     "Date of Birth", 
     value=date(1975, 1, 1), 
@@ -55,7 +55,7 @@ dob = st.date_input(
 target_retirement_date = st.date_input("Target Retirement Date", value=date(2035, 1, 1), format="DD/MM/YYYY")
 
 current_pot = st.slider("Current Private Pension Pot (£)", 0, 3500000, 500000, step=5000)
-st.markdown(f"**Current Pot Selected: £{current_pot:,}**")
+st.markdown(f"**Selected Pot: £{current_pot:,}**")
 
 annual_contribution = st.slider("Annual Contribution (£)", 0, 100000, 10000, step=500)
 monthly_drawdown = st.slider("Desired Monthly Withdrawal (£)", 0, 20000, 3000, step=100)
@@ -66,22 +66,4 @@ take_lump_sum = st.selectbox("Take 25% Tax-Free Lump Sum?", ["N", "Y"])
 lump_sum_val = 0.0
 if take_lump_sum == "Y":
     max_ls = min(current_pot * 0.25, 268275.0)
-    lump_sum_val = st.number_input(f"Lump Sum Amount (Max £{max_ls:,.0f})", value=max_ls, min_value=0.0)
-
-state_pension_end_date = st.date_input("Date UK State Pension expected to end (Optional)", value=None, format="DD/MM/YYYY")
-
-with st.expander("Growth & Inflation Settings"):
-    cagr = st.number_input("Pension Pot CAGR (%)", value=5.0) / 100
-    inflation = st.number_input("Expected Inflation Rate (%)", value=4.0) / 100
-    debasement = st.number_input("Currency Debasement Rate (%)", value=5.0) / 100
-
-# --- 4. CALCULATION LOGIC ---
-
-def get_age(birth_date, current_date):
-    return current_date.year - birth_date.year - ((current_date.month, current_date.day) < (birth_date.month, birth_date.day))
-
-today = date.today()
-retire_yr = target_retirement_date.year
-
-# UK State Pension Age Logic
-if
+    lump_sum_val = st.number_input(f"Lump Sum Amount (Max £{max_ls:,.0f})", value=
