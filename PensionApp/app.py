@@ -31,14 +31,15 @@ st.markdown(
         font-family: 'Helvetica', sans-serif;
     }
 
-    /* FORCE CENTER ALIGNMENT for the Table cells and headers */
-    /* This targets the standard Streamlit table component */
+    /* CSS TO HIDE THE INDEX COLUMN AND CENTER DATA */
+    /* This targets the first column (the index) and hides it */
+    thead tr th:first-child { display:none; }
+    tbody tr th { display:none; }
+    
+    /* Center all remaining headers and cells */
     .stTable td, .stTable th {
         text-align: center !important;
-    }
-    
-    thead tr th {
-        text-align: center !important;
+        color: #333;
     }
 
     /* Input highlights in Yellow */
@@ -94,7 +95,6 @@ with st.expander("Growth & Inflation Settings"):
 def calculate_age(birth, current):
     return current.year - birth.year - ((current.month, current.day) < (birth.month, birth.day))
 
-# UK State Pension Age Logic
 if dob.year < 1960: spa_age = 66
 elif dob.year < 1977: spa_age = 67
 else: spa_age = 68
@@ -112,12 +112,4 @@ pot_after_ls = pot_at_retirement - lump_sum_amount
 
 st.markdown("---")
 col1, col2 = st.columns(2)
-# Added dark blue color to metrics via the HTML style above
-col1.metric("Tax Free Amount", f"£{lump_sum_amount:,.0f}")
-col2.metric("Starting Pension Pot", f"£{pot_after_ls:,.0f}")
-
-# 3. Drawdown Simulation
-data_rows = []
-balance = pot_after_ls
-sim_date = target_retirement_date
-base_sp_annual = 11973
+col1.metric("Tax Free Amount", f
