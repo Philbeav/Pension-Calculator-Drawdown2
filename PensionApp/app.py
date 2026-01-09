@@ -125,4 +125,38 @@ for year in range(1, 31):
         
         # Private Withdrawal (Inflation adjusted)
         monthly_withdrawal = monthly_drawdown_goal * ((1 + inflation) ** (year - 1))
-        if balance
+        if balance >= monthly_withdrawal:
+            balance -= monthly_withdrawal
+            annual_drawdown_this_year += monthly_withdrawal
+        else:
+            annual_drawdown_this_year += balance
+            balance = 0
+            
+        balance *= (1 + cagr)**(1/12)
+        sim_date += timedelta(days=30)
+
+    combined = annual_drawdown_this_year + annual_sp_this_year
+    real_val = combined / ((1 + debasement) ** (year + years_to_retire))
+
+    data_rows.append({
+        "Year": sim_date.year,
+        "User Age": int(current_age),
+        "Remaining Pot": f"£{balance:,.0f}",
+        "Private Pension": f"£{annual_drawdown_this_year:,.0f}",
+        "State Pension": f"£{annual_sp_this_year:,.0f}",
+        "Combined": f"£{combined:,.0f}",
+        "Real Value": f"£{real_val:,.0f}"
+    })
+
+# --- DISPLAY TABLE ---
+st.subheader("30-Year Projection")
+df = pd.DataFrame(data_rows)
+# Reordering columns as requested
+df = df[["Year", "User Age", "Remaining Pot", "Private Pension", "State Pension", "Combined", "Real Value"]]
+st.table(df)
+
+# --- FOOTER ---
+st.markdown("---")
+st.markdown("""
+**The model assumes that the users qualifies for the full state pension with the required national insurance contributions having been attained.** **All of these calculations are for illustrative purposes only and should not in any way be regarded as guaranteed or relied upon for financial decisions.** **Figures shown are gross amounts and should be modelled against your own personal tax liabilities.**
+""")
