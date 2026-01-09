@@ -5,7 +5,7 @@ from datetime import date, timedelta
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- CUSTOM STYLING ---
+# --- CUSTOM STYLING (Dark Blue Titles, Cream Background, Centered Table) ---
 st.markdown(
     """
     <style>
@@ -25,12 +25,18 @@ st.markdown(
         max-width: 850px !important;
     }
     
-    /* FORCE CENTER ALIGNMENT for the Table */
+    /* Dark Blue Headlines and Subheaders */
+    h1, h2, h3, h4, h5, h6, .stSubheader {
+        color: #00008B !important;
+        font-family: 'Helvetica', sans-serif;
+    }
+
+    /* FORCE CENTER ALIGNMENT for the Table cells and headers */
+    /* This targets the standard Streamlit table component */
     .stTable td, .stTable th {
         text-align: center !important;
     }
     
-    /* Ensure table headers are also centered */
     thead tr th {
         text-align: center !important;
     }
@@ -106,6 +112,7 @@ pot_after_ls = pot_at_retirement - lump_sum_amount
 
 st.markdown("---")
 col1, col2 = st.columns(2)
+# Added dark blue color to metrics via the HTML style above
 col1.metric("Tax Free Amount", f"£{lump_sum_amount:,.0f}")
 col2.metric("Starting Pension Pot", f"£{pot_after_ls:,.0f}")
 
@@ -113,63 +120,4 @@ col2.metric("Starting Pension Pot", f"£{pot_after_ls:,.0f}")
 data_rows = []
 balance = pot_after_ls
 sim_date = target_retirement_date
-base_sp_annual = 11973.0 # 2025/26
-
-# Fixed monthly amount as requested (No inflation adjustment)
-fixed_monthly_withdrawal = monthly_drawdown_goal 
-
-for year in range(1, 31):
-    annual_drawdown_this_year = 0
-    annual_sp_this_year = 0
-    current_age = calculate_age(dob, sim_date)
-    
-    for month in range(12):
-        # State Pension Growth (Increases every month relative to today)
-        years_from_now = (sim_date - date.today()).days / 365.25
-        projected_sp_monthly = (base_sp_annual * (1.045 ** years_from_now)) / 12
-        
-        if sim_date >= spa_date:
-            if not state_pension_end_date or sim_date < state_pension_end_date:
-                annual_sp_this_year += projected_sp_monthly
-        
-        # Private Withdrawal (Fixed)
-        if balance >= fixed_monthly_withdrawal:
-            balance -= fixed_monthly_withdrawal
-            annual_drawdown_this_year += fixed_monthly_withdrawal
-        else:
-            annual_drawdown_this_year += balance
-            balance = 0
-            
-        balance *= (1 + cagr)**(1/12)
-        sim_date += timedelta(days=30)
-
-    combined = annual_drawdown_this_year + annual_sp_this_year
-    
-    # Real Value calculation (how inflation/debasement affects the FIXED combined amount)
-    total_years_from_now = year + years_to_retire
-    # We use a combined inflation/debasement factor for "purchasing power"
-    real_val = combined / ((1 + (inflation + debasement)/2) ** total_years_from_now)
-
-    data_rows.append({
-        "Year": sim_date.year,
-        "User Age": int(current_age),
-        "Remaining Pot": f"£{balance:,.0f}",
-        "Private Pension": f"£{annual_drawdown_this_year:,.0f}",
-        "State Pension": f"£{annual_sp_this_year:,.0f}",
-        "Combined": f"£{combined:,.0f}",
-        "Real Value": f"£{real_val:,.0f}"
-    })
-
-# --- DISPLAY TABLE ---
-st.subheader("30-Year Projection")
-df = pd.DataFrame(data_rows)
-df = df[["Year", "User Age", "Remaining Pot", "Private Pension", "State Pension", "Combined", "Real Value"]]
-
-# Use st.table for best centering
-st.table(df)
-
-# --- FOOTER ---
-st.markdown("---")
-st.markdown("""
-**The model assumes that the users qualifies for the full state pension with the required national insurance contributions having been attained.** **All of these calculations are for illustrative purposes only and should not in any way be regarded as guaranteed or relied upon for financial decisions.** **Figures shown are gross amounts and should be modelled against your own personal tax liabilities.**
-""")
+base_sp_annual = 11973
