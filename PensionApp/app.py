@@ -5,25 +5,25 @@ from datetime import date, timedelta
 # --- PAGE CONFIGURATION ---
 st.set_page_config(page_title="Astute Retirement Mindset", layout="centered")
 
-# --- CUSTOM STYLING ---
+# --- CUSTOM STYLING (The White Outer / Cream Inner Fix) ---
 st.markdown(
     """
     <style>
-    /* 1. Set the background color for the whole page */
+    /* 1. This makes the entire background of the browser WHITE */
     .stApp {
-        background-color: #FFF0DB; 
+        background-color: #FFFFFF !important;
     }
     
-    /* 2. The Main Content Box (Inside the Blue Border) */
+    /* 2. This creates your Cream Box with the Blue Border */
     .block-container {
         border: 4px solid #00008B; 
         padding: 40px !important;
-        background-color: #FFF0DB; 
+        background-color: #FFF0DB !important; /* Your specific Cream/Peach */
         margin-top: 50px !important; 
         margin-bottom: 50px !important;
         border-radius: 15px;
         max-width: 800px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Adds a subtle shadow to pop off the white */
     }
     
     /* Dark Blue Headlines */
@@ -32,7 +32,6 @@ st.markdown(
     }
 
     /* CENTER DATA AND HIDE INDEX */
-    /* This hides the first column (0, 1, 2...) */
     thead tr th:first-child { display:none; }
     tbody tr th { display:none; }
     
